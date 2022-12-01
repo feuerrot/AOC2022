@@ -7,6 +7,7 @@ import (
 	"strings"
 )
 
+// AOC202201Helper builds a sorted list of supplies from the specified input
 func AOC202201Helper(input string) ([]int, error) {
 	var supplies []int
 
@@ -38,6 +39,7 @@ func AOC202201Helper(input string) ([]int, error) {
 	return supplies, nil
 }
 
+// AOC202201SumMaxN sums the n biggest items of supplies
 func AOC202201SumMaxN(supplies []int, n int) (int, error) {
 	if len(supplies) < n {
 		return 0, fmt.Errorf("input %+v contains less than %d elements", supplies, n)
