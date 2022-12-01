@@ -1,11 +1,16 @@
 package main
 
-import "testing"
+import (
+	"testing"
 
-func TestAOC202201(t *testing.T) {
+	"github.com/google/go-cmp/cmp"
+)
+
+func TestAOC202201Helper(t *testing.T) {
 	var tests = []struct {
-		input  string
-		output []int
+		input     string
+		output    []int
+		outputErr bool
 	}{
 		{
 			input: `
@@ -23,34 +28,34 @@ func TestAOC202201(t *testing.T) {
 9000
 
 10000`,
-			output: []int{24000, 45000},
+			output: []int{4000, 6000, 10000, 11000, 24000},
+		},
+		{
+			input:     ``,
+			output:    nil,
+			outputErr: false,
+		},
+		{
+			input:     `Pinselohrkatze`,
+			output:    nil,
+			outputErr: true,
 		},
 	}
 
 	for _, test := range tests {
-		want := test.output[0]
-		got, err := AOC2022011(test.input)
-		if err != nil {
-			t.Fatalf("AOC2022011() err: %v", err)
+		want := test.output
+		got, err := AOC202201Helper(test.input)
+		if err != nil && !test.outputErr {
+			t.Fatalf("AOC2022011Helper(%+v) err: %v", test.input, err)
+		}
+		if err == nil && test.outputErr {
+			t.Fatalf("AOC2022011Helper(%+v) should return an error instead of %d", test.input, test.output)
 		}
 
-		if want != got {
-			t.Errorf("AOC2022011() missmatch:\nwant: %d\ngot:  %d", want, got)
-		}
-	}
-
-	for _, test := range tests {
-		want := test.output[1]
-		got, err := AOC2022012(test.input)
-		if err != nil {
-			t.Fatalf("AOC2022012() err: %v", err)
-		}
-
-		if want != got {
-			t.Errorf("AOC2022012() missmatch:\nwant: %d\ngot:  %d", want, got)
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("AOC2022011Helper(%+v) missmatch (-want +got):\n%s", test.input, diff)
 		}
 	}
-
 }
 
 func TestAOC202201SumMaxN(t *testing.T) {
@@ -89,8 +94,12 @@ func TestAOC202201SumMaxN(t *testing.T) {
 	for _, test := range tests {
 		got, err := AOC202201SumMaxN(test.input, test.inputN)
 		if err != nil && !test.outputErr {
-			t.Errorf("AOC202201SumMaxN(%+v, %d) err: %v", test.input, test.inputN, err)
+			t.Fatalf("AOC202201SumMaxN(%+v, %d) err: %v", test.input, test.inputN, err)
 		}
+		if err == nil && test.outputErr {
+			t.Fatalf("AOC202201SumMaxN(%+v, %d) should return an error instead of %d", test.input, test.inputN, test.output)
+		}
+
 		if got != test.output {
 			t.Errorf("AOC202201SumMaxN(%+v, %d) missmatch:\nwant: %d\ngot:  %d", test.input, test.inputN, test.output, got)
 		}

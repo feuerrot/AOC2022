@@ -23,7 +23,7 @@ func AOC202201Helper(input string) ([]int, error) {
 
 		lineInt, err := strconv.Atoi(line)
 		if err != nil {
-			return []int{}, fmt.Errorf("can't parse \"%s\" as an integer: %v", line, err)
+			return nil, fmt.Errorf("can't parse \"%s\" as an integer: %v", line, err)
 		}
 		sum += lineInt
 	}
