@@ -1,84 +1,33 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 )
 
+type Task func(string) (int, error)
+
 func main() {
-	content, err := os.ReadFile("input/2022011")
-	if err != nil {
-		log.Fatalf("can't open input: %v", err)
+	tasks := map[int][]Task{
+		1: {AOC2022011, AOC2022012},
+		2: {AOC2022021, AOC2022022},
+		3: {AOC2022031, AOC2022032},
+		4: {AOC2022041, AOC2022042},
 	}
 
-	result, err := AOC2022011(string(content))
-	if err != nil {
-		log.Fatalf("can't parse input: %v", err)
+	for day := range tasks {
+		input, err := os.ReadFile(fmt.Sprintf("input/2022%02d", day))
+		if err != nil {
+			log.Fatalf("can't open input: %v", err)
+		}
+
+		for i, task := range tasks[day] {
+			res, err := task(string(input))
+			if err != nil {
+				log.Fatalf("error in Task %d/%d: %v", day, i+1, err)
+			}
+			log.Printf("AOC2022 %02d/%d: %d", day, i+1, res)
+		}
 	}
-
-	log.Printf("AOC2022 01 1: %d", result)
-
-	result, err = AOC2022012(string(content))
-	if err != nil {
-		log.Fatalf("can't parse input: %v", err)
-	}
-
-	log.Printf("AOC2022 01 2: %d", result)
-
-	content, err = os.ReadFile("input/2022021")
-	if err != nil {
-		log.Fatalf("can't open input: %v", err)
-	}
-
-	result, err = AOC2022021(string(content))
-	if err != nil {
-		log.Fatalf("can't parse input: %v", err)
-	}
-
-	log.Printf("AOC2022 02 1: %d", result)
-
-	result, err = AOC2022022(string(content))
-	if err != nil {
-		log.Fatalf("can't parse input: %v", err)
-	}
-
-	log.Printf("AOC2022 02 2: %d", result)
-
-	content, err = os.ReadFile("input/2022031")
-	if err != nil {
-		log.Fatalf("can't open input: %v", err)
-	}
-
-	result, err = AOC2022031(string(content))
-	if err != nil {
-		log.Fatalf("can't parse input: %v", err)
-	}
-
-	log.Printf("AOC2022 03 1: %d", result)
-
-	result, err = AOC2022032(string(content))
-	if err != nil {
-		log.Fatalf("can't parse input: %v", err)
-	}
-
-	log.Printf("AOC2022 03 2: %d", result)
-
-	content, err = os.ReadFile("input/2022041")
-	if err != nil {
-		log.Fatalf("can't open input: %v", err)
-	}
-
-	result, err = AOC2022041(string(content))
-	if err != nil {
-		log.Fatalf("can't parse input: %v", err)
-	}
-
-	log.Printf("AOC2022 04 1: %d", result)
-
-	result, err = AOC2022042(string(content))
-	if err != nil {
-		log.Fatalf("can't parse input: %v", err)
-	}
-
-	log.Printf("AOC2022 04 2: %d", result)
 }
