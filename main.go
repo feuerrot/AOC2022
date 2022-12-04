@@ -74,4 +74,11 @@ func main() {
 	}
 
 	log.Printf("AOC2022 04 1: %d", result)
+
+	result, err = AOC2022042(string(content))
+	if err != nil {
+		log.Fatalf("can't parse input: %v", err)
+	}
+
+	log.Printf("AOC2022 04 2: %d", result)
 }
