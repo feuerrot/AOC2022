@@ -62,4 +62,16 @@ func main() {
 	}
 
 	log.Printf("AOC2022 03 2: %d", result)
+
+	content, err = os.ReadFile("input/2022041")
+	if err != nil {
+		log.Fatalf("can't open input: %v", err)
+	}
+
+	result, err = AOC2022041(string(content))
+	if err != nil {
+		log.Fatalf("can't parse input: %v", err)
+	}
+
+	log.Printf("AOC2022 04 1: %d", result)
 }
