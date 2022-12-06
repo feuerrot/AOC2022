@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"os"
+	"testing"
+)
 
 func TestAOC2022061(t *testing.T) {
 	tests := []struct {
@@ -38,12 +41,71 @@ func TestAOC2022061(t *testing.T) {
 	for _, test := range tests {
 		got := AOC202206FindUnique(test.input, 4)
 		if got != test.preamble {
-			t.Errorf("AOC202206FindPreamble(%s) differs:\nwant: %d\ngot:  %d", test.input, test.preamble, got)
+			t.Errorf("AOC202206FindUnique(%s, 4) differs:\nwant: %d\ngot:  %d", test.input, test.preamble, got)
+		}
+
+		got = AOC202206FindUniqueJump(test.input, 4)
+		if got != test.preamble {
+			t.Errorf("AOC202206FindUniqueJump(%s, 4) differs:\nwant: %d\ngot:  %d", test.input, test.preamble, got)
+		}
+
+		got = AOC202206FindUniqueReverseJump(test.input, 4)
+		if got != test.preamble {
+			t.Errorf("AOC202206FindUniqueReverseJump(%s, 4) differs:\nwant: %d\ngot:  %d", test.input, test.preamble, got)
 		}
 
 		got = AOC202206FindUnique(test.input, 14)
 		if got != test.message {
-			t.Errorf("AOC202206FindMessage(%s) differs:\nwant: %d\ngot:  %d", test.input, test.message, got)
+			t.Errorf("AOC202206FindUnique(%s, 14) differs:\nwant: %d\ngot:  %d", test.input, test.message, got)
 		}
+
+		got = AOC202206FindUniqueJump(test.input, 14)
+		if got != test.message {
+			t.Errorf("AOC202206FindUniqueJump(%s, 14) differs:\nwant: %d\ngot:  %d", test.input, test.message, got)
+		}
+
+		got = AOC202206FindUniqueReverseJump(test.input, 14)
+		if got != test.message {
+			t.Errorf("AOC202206FindUniqueReverseJump(%s, 14) differs:\nwant: %d\ngot:  %d", test.input, test.message, got)
+		}
+	}
+}
+
+func BenchmarkAOC202206FindUnique(b *testing.B) {
+	data, err := os.ReadFile("input/202206")
+	if err != nil {
+		b.Fatalf("can't open input: %v", err)
+	}
+	input := string(data)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		AOC202206FindUnique(input, 14)
+	}
+}
+
+func BenchmarkAOC202206FindUniqueJump(b *testing.B) {
+	data, err := os.ReadFile("input/202206")
+	if err != nil {
+		b.Fatalf("can't open input: %v", err)
+	}
+	input := string(data)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		AOC202206FindUniqueJump(input, 14)
+	}
+}
+
+func BenchmarkAOC202206FindUniqueReverseJump(b *testing.B) {
+	data, err := os.ReadFile("input/202206")
+	if err != nil {
+		b.Fatalf("can't open input: %v", err)
+	}
+	input := string(data)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		AOC202206FindUniqueReverseJump(input, 14)
 	}
 }
