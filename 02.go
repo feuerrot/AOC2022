@@ -40,19 +40,19 @@ func AOC202202Round(opponent, self string) (int, error) {
 	return AOC202202Win(opponent, self) + AOC202202Points(self), nil
 }
 
-func AOC2022021(input string) (int, error) {
+func AOC2022021(input string) (string, error) {
 	sum := 0
 	for _, line := range strings.Split(input, "\n") {
 		parts := strings.Split(line, " ")
 		points, err := AOC202202Round(parts[0], parts[1])
 		if err != nil {
-			return 0, fmt.Errorf("Line: %s: %v", line, err)
+			return "", fmt.Errorf("Line: %s: %v", line, err)
 		}
 
 		sum += points
 	}
 
-	return sum, nil
+	return fmt.Sprintf("%d", sum), nil
 }
 
 func AOC202202Lookup(opponent, target string) string {
@@ -77,18 +77,18 @@ func AOC202202Lookup(opponent, target string) string {
 	return lookup[opponent][target]
 }
 
-func AOC2022022(input string) (int, error) {
+func AOC2022022(input string) (string, error) {
 
 	sum := 0
 	for _, line := range strings.Split(input, "\n") {
 		parts := strings.Split(line, " ")
 		points, err := AOC202202Round(parts[0], AOC202202Lookup(parts[0], parts[1]))
 		if err != nil {
-			return 0, fmt.Errorf("Line: %s: %v", line, err)
+			return "", fmt.Errorf("Line: %s: %v", line, err)
 		}
 
 		sum += points
 	}
 
-	return sum, nil
+	return fmt.Sprintf("%d", sum), nil
 }
