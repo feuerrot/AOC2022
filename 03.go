@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -50,17 +51,17 @@ func AOC202203Round(line string) int {
 	return prio
 }
 
-func AOC2022031(input string) (int, error) {
+func AOC2022031(input string) (string, error) {
 	sum := 0
 	for _, line := range strings.Split(input, "\n") {
 		prio := AOC202203Round(line)
 		sum += prio
 	}
 
-	return sum, nil
+	return fmt.Sprintf("%d", sum), nil
 }
 
-func AOC2022032(input string) (int, error) {
+func AOC2022032(input string) (string, error) {
 	sum := 0
 	lines := strings.Split(input, "\n")
 	rounds := len(lines) / 3
@@ -70,5 +71,5 @@ func AOC2022032(input string) (int, error) {
 		sum += prio
 	}
 
-	return sum, nil
+	return fmt.Sprintf("%d", sum), nil
 }

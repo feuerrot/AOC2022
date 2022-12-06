@@ -53,20 +53,22 @@ func AOC202201SumMaxN(supplies []int, n int) (int, error) {
 	return sum, nil
 }
 
-func AOC2022011(input string) (int, error) {
+func AOC2022011(input string) (string, error) {
 	supplies, err := AOC202201Helper(input)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 
-	return AOC202201SumMaxN(supplies, 1)
+	res, err := AOC202201SumMaxN(supplies, 1)
+	return fmt.Sprintf("%d", res), err
 }
 
-func AOC2022012(input string) (int, error) {
+func AOC2022012(input string) (string, error) {
 	supplies, err := AOC202201Helper(input)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 
-	return AOC202201SumMaxN(supplies, 3)
+	res, err := AOC202201SumMaxN(supplies, 3)
+	return fmt.Sprintf("%d", res), err
 }

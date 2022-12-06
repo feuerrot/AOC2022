@@ -67,13 +67,13 @@ func AOC202204Parse(line string) ([]int, []int, error) {
 	return left, right, nil
 }
 
-func AOC2022041(input string) (int, error) {
+func AOC2022041(input string) (string, error) {
 	lines := strings.Split(input, "\n")
 	sum := 0
 	for _, line := range lines {
 		left, right, err := AOC202204Parse(line)
 		if err != nil {
-			return 0, err
+			return "", err
 		}
 
 		contains := AOC202204FullOverlap(left, right)
@@ -82,16 +82,16 @@ func AOC2022041(input string) (int, error) {
 		}
 	}
 
-	return sum, nil
+	return fmt.Sprintf("%d", sum), nil
 }
 
-func AOC2022042(input string) (int, error) {
+func AOC2022042(input string) (string, error) {
 	lines := strings.Split(input, "\n")
 	sum := 0
 	for _, line := range lines {
 		left, right, err := AOC202204Parse(line)
 		if err != nil {
-			return 0, err
+			return "", err
 		}
 
 		contains := AOC202204PartialOverlap(left, right)
@@ -100,5 +100,5 @@ func AOC2022042(input string) (int, error) {
 		}
 	}
 
-	return sum, nil
+	return fmt.Sprintf("%d", sum), nil
 }

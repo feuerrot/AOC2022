@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 )
@@ -130,14 +129,13 @@ func AOC2022051Wrapper(input string) (string, error) {
 	return crates.AOC202205GetTop(), nil
 }
 
-func AOC2022051(input string) (int, error) {
+func AOC2022051(input string) (string, error) {
 	out, err := AOC2022051Wrapper(input)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
-	log.Printf("AOC2022 05/1: %s", out)
 
-	return 0, nil
+	return out, nil
 }
 
 func AOC2022052Wrapper(input string) (string, error) {
@@ -160,12 +158,11 @@ func AOC2022052Wrapper(input string) (string, error) {
 	return crates.AOC202205GetTop(), nil
 }
 
-func AOC2022052(input string) (int, error) {
+func AOC2022052(input string) (string, error) {
 	out, err := AOC2022052Wrapper(input)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
-	log.Printf("AOC2022 05/2: %s", out)
 
-	return 0, nil
+	return out, nil
 }
