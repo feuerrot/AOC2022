@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -191,12 +192,48 @@ func (fs *AOC202207FS) AOC2022071Helper() int {
 	return sum
 }
 
-func AOC2022071(input string) (string, error) {
+func AOC202207FSInit(input string) (*AOC202207FS, error) {
 	fs, err := AOC202207NewFS()
 	if err != nil {
-		return "", fmt.Errorf("can't init new FS: %v", err)
+		return nil, fmt.Errorf("can't init new FS: %v", err)
 	}
 	fs.Populate(input)
 
+	return fs, nil
+}
+
+func AOC2022071(input string) (string, error) {
+	fs, err := AOC202207FSInit(input)
+	if err != nil {
+		return "", err
+	}
+
 	return fmt.Sprintf("%d", fs.AOC2022071Helper()), nil
+}
+
+func (fs *AOC202207FS) AOC2022072Helper() int {
+	space := 70000000
+	requiredFree := 30000000
+	currentFree := space - fs.Size()
+	delta := requiredFree - currentFree
+
+	dirsizes := fs.GetDirsizes()
+	sort.Ints(dirsizes)
+	for _, size := range dirsizes {
+		if size < delta {
+			continue
+		}
+		return size
+	}
+
+	return 0
+}
+
+func AOC2022072(input string) (string, error) {
+	fs, err := AOC202207FSInit(input)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%d", fs.AOC2022072Helper()), nil
 }

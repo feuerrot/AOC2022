@@ -70,4 +70,9 @@ $ ls
 	if part1 != 95437 {
 		t.Errorf("AOC2022071Helper() missmatch:\nwant: 95437\ngot:  %d", part1)
 	}
+
+	part2 := fs.AOC2022072Helper()
+	if part2 != 24933642 {
+		t.Errorf("AOC2022072Helper() missmatch:\nwant: 24933642\ngot:  %d", part2)
+	}
 }

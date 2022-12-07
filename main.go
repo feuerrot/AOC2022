@@ -17,7 +17,7 @@ func main() {
 		4: {AOC2022041, AOC2022042},
 		5: {AOC2022051, AOC2022052},
 		6: {AOC2022061, AOC2022062},
-		7: {AOC2022071},
+		7: {AOC2022071, AOC2022072},
 	}
 	days := []int{}
 	for day := range tasks {
