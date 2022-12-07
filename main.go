@@ -17,12 +17,13 @@ func main() {
 		4: {AOC2022041, AOC2022042},
 		5: {AOC2022051, AOC2022052},
 		6: {AOC2022061, AOC2022062},
+		7: {AOC2022071, AOC2022072},
 	}
 	days := []int{}
 	for day := range tasks {
 		days = append(days, day)
 	}
-	days = sort.IntSlice(days)
+	sort.Ints(days)
 
 	for _, day := range days {
 		input, err := os.ReadFile(fmt.Sprintf("input/2022%02d", day))
