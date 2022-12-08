@@ -4,17 +4,19 @@ import (
 	"testing"
 )
 
-func TestAOC202208HiddenTrees(t *testing.T) {
+func TestAOC202208(t *testing.T) {
 	test := struct {
 		input  string
-		output int
+		hidden int
+		score  int
 	}{
 		input: `30373
 25512
 65332
 33549
 35390`,
-		output: 21,
+		hidden: 21,
+		score:  8,
 	}
 
 	forest, err := AOC202208ParseForest(test.input)
@@ -24,7 +26,13 @@ func TestAOC202208HiddenTrees(t *testing.T) {
 
 	forest.HideTrees()
 	got := forest.VisibleTrees()
-	if got != test.output {
-		t.Errorf("AOC202208Forest.VisibleTrees() missmatch:\nwant: %d\ngot:  %d", test.output, got)
+	if got != test.hidden {
+		t.Errorf("AOC202208Forest.VisibleTrees() missmatch:\nwant: %d\ngot:  %d", test.hidden, got)
+	}
+
+	forest.CalculateScore()
+	score := forest.Highscore()
+	if score != test.score {
+		t.Errorf("AOC202208Forest.Highscore() missmatch:\nwant: %d\ngot:  %d", test.score, score)
 	}
 }

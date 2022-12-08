@@ -9,6 +9,7 @@ import (
 type AOC202208Tree struct {
 	Height  int
 	Hidden  bool
+	Score   int
 	HLeft   int
 	HRight  int
 	HTop    int
@@ -126,6 +127,42 @@ func (forest *AOC202208Forest) HideTrees() {
 	}
 }
 
+func (forest *AOC202208Forest) CalculateScore() {
+	for row := 1; row < forest.Rows; row++ {
+		for col := 1; col < forest.Cols; col++ {
+			localHeight := forest.Trees[row][col].Height
+			score := 1
+			for rowDelta := row - 1; rowDelta >= 0; rowDelta-- {
+				if forest.Trees[rowDelta][col].Height >= localHeight || rowDelta == 0 {
+					score *= (row - rowDelta)
+					break
+				}
+			}
+			for rowDelta := row + 1; rowDelta <= forest.Rows; rowDelta++ {
+				if forest.Trees[rowDelta][col].Height >= localHeight || rowDelta == forest.Rows {
+					score *= (rowDelta - row)
+					break
+				}
+			}
+
+			for colDelta := col - 1; colDelta >= 0; colDelta-- {
+				if forest.Trees[row][colDelta].Height >= localHeight || colDelta == 0 {
+					score *= (col - colDelta)
+					break
+				}
+			}
+			for colDelta := col + 1; colDelta <= forest.Cols; colDelta++ {
+				if forest.Trees[row][colDelta].Height >= localHeight || colDelta == forest.Cols {
+					score *= (colDelta - col)
+					break
+				}
+			}
+
+			forest.Trees[row][col].Score = score
+		}
+	}
+}
+
 func (forest *AOC202208Forest) VisibleTrees() int {
 	sum := 0
 	for _, row := range forest.Trees {
@@ -139,6 +176,19 @@ func (forest *AOC202208Forest) VisibleTrees() int {
 	return sum
 }
 
+func (forest *AOC202208Forest) Highscore() int {
+	max := 0
+	for _, row := range forest.Trees {
+		for _, tree := range row {
+			if tree.Score > max {
+				max = tree.Score
+			}
+		}
+	}
+
+	return max
+}
+
 func AOC2022081(input string) (string, error) {
 	forest, err := AOC202208ParseForest(input)
 	if err != nil {
@@ -147,4 +197,14 @@ func AOC2022081(input string) (string, error) {
 	forest.HideTrees()
 
 	return fmt.Sprintf("%d", forest.VisibleTrees()), nil
+}
+
+func AOC2022082(input string) (string, error) {
+	forest, err := AOC202208ParseForest(input)
+	if err != nil {
+		return "", err
+	}
+	forest.CalculateScore()
+
+	return fmt.Sprintf("%d", forest.Highscore()), nil
 }
