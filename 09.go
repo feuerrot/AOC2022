@@ -7,8 +7,7 @@ import (
 )
 
 type AOC202209Location struct {
-	Head      []int
-	Tail      []int
+	Node      [][]int
 	Tailvisit map[string]interface{}
 }
 
@@ -19,12 +18,25 @@ func absInt(in int) int {
 	return in
 }
 
-func AOC202209NewLocation() *AOC202209Location {
-	return &AOC202209Location{
-		Head:      []int{0, 0},
-		Tail:      []int{0, 0},
+func sgnInt(in int) int {
+	if in < 0 {
+		return -1
+	} else if in > 0 {
+		return 1
+	}
+	return 0
+}
+
+func AOC202209NewLocation(length int) *AOC202209Location {
+	rtn := &AOC202209Location{
+		Node:      [][]int{},
 		Tailvisit: make(map[string]interface{}),
 	}
+	for i := 0; i < length; i++ {
+		rtn.Node = append(rtn.Node, []int{0, 0})
+	}
+
+	return rtn
 }
 
 func (location AOC202209Location) Count() int {
@@ -32,21 +44,28 @@ func (location AOC202209Location) Count() int {
 }
 
 func (location *AOC202209Location) Visit() {
-	key := fmt.Sprintf("%d:%d", location.Tail[0], location.Tail[1])
+	key := fmt.Sprintf("%d:%d", location.Node[len(location.Node)-1][0], location.Node[len(location.Node)-1][1])
 	location.Tailvisit[key] = true
 }
 
 func (location *AOC202209Location) Move(movement AOC202209Instruction) {
-	rdelta, udelta := movement.Dir()
-	for i := 0; i < movement.Steps; i++ {
-		headROld, headUOld := location.Head[0], location.Head[1]
-		location.Head[0] += rdelta
-		location.Head[1] += udelta
+	for step := 0; step < movement.Steps; step++ {
+		rdelta, udelta := movement.Dir()
+		location.Node[0][0] += rdelta
+		location.Node[0][1] += udelta
+		for node := 1; node < len(location.Node); node++ {
+			rHeadTailDelta := location.Node[node-1][0] - location.Node[node][0]
+			uHeadTailDelta := location.Node[node-1][1] - location.Node[node][1]
+			if absInt(rHeadTailDelta) > 1 || absInt(uHeadTailDelta) > 1 {
+				rdelta = sgnInt(rHeadTailDelta)
+				udelta = sgnInt(uHeadTailDelta)
+			} else {
+				rdelta = 0
+				udelta = 0
+			}
 
-		rHeadTailDelta := location.Head[0] - location.Tail[0]
-		uHeadTailDelta := location.Head[1] - location.Tail[1]
-		if absInt(rHeadTailDelta) > 1 || absInt(uHeadTailDelta) > 1 {
-			location.Tail = []int{headROld, headUOld}
+			location.Node[node][0] += rdelta
+			location.Node[node][1] += udelta
 		}
 		location.Visit()
 	}
@@ -102,7 +121,7 @@ func AOC2022091Helper(input string) (int, error) {
 		return 0, fmt.Errorf("can't parse instructions: %v", err)
 	}
 
-	loc := AOC202209NewLocation()
+	loc := AOC202209NewLocation(2)
 
 	for _, instruction := range instructions {
 		loc.Move(instruction)
@@ -113,6 +132,30 @@ func AOC2022091Helper(input string) (int, error) {
 
 func AOC2022091(input string) (string, error) {
 	data, err := AOC2022091Helper(input)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%d", data), nil
+}
+
+func AOC2022092Helper(input string) (int, error) {
+	instructions, err := AOC202209ParseInstuctions(input)
+	if err != nil {
+		return 0, fmt.Errorf("can't parse instructions: %v", err)
+	}
+
+	loc := AOC202209NewLocation(10)
+
+	for _, instruction := range instructions {
+		loc.Move(instruction)
+	}
+
+	return loc.Count(), nil
+}
+
+func AOC2022092(input string) (string, error) {
+	data, err := AOC2022092Helper(input)
 	if err != nil {
 		return "", err
 	}

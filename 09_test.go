@@ -28,6 +28,32 @@ R 2`,
 	}
 }
 
+func TestAOC2022092(t *testing.T) {
+	test := struct {
+		input  string
+		output int
+	}{
+		input: `R 5
+U 8
+L 8
+D 3
+R 17
+D 10
+L 25
+U 20`,
+		output: 36,
+	}
+
+	got, err := AOC2022092Helper(test.input)
+	if err != nil {
+		t.Fatalf("AOC2022092Helper() err: %v", err)
+	}
+
+	if got != test.output {
+		t.Errorf("AOC2022092Helper() missmatch:\nwant: %d\ngot:  %d", test.output, got)
+	}
+}
+
 func TestAOC202209LocationMove(t *testing.T) {
 	test := struct {
 		steps []AOC202209Instruction
@@ -46,7 +72,7 @@ func TestAOC202209LocationMove(t *testing.T) {
 		count: 3,
 	}
 
-	loc := AOC202209NewLocation()
+	loc := AOC202209NewLocation(2)
 	for _, step := range test.steps {
 		loc.Move(step)
 	}
