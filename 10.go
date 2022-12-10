@@ -123,3 +123,45 @@ func AOC2022101(input string) (string, error) {
 
 	return fmt.Sprintf("%d", out), nil
 }
+
+func AOC2022102Helper(input string) ([]string, error) {
+	rtn := []string{}
+	instructions, err := AOC202210ParseInstructions(input)
+	if err != nil {
+		return rtn, err
+	}
+
+	cpu := AOC202210NewCPU(instructions)
+	fb := ""
+	for {
+		if absInt(cpu.Cycle%40-cpu.X) <= 1 {
+			fb += "#"
+		} else {
+			fb += "."
+		}
+		_, err := cpu.Tick()
+		if err == AOC202210CPUHalt {
+			break
+		}
+		if err != nil {
+			return rtn, fmt.Errorf("unexpected CPU error: %v", err)
+		}
+	}
+
+	for i := 0; i < 6; i++ {
+		rtn = append(rtn, fb[i*40:(i+1)*40])
+	}
+
+	return rtn, nil
+}
+
+func AOC2022102(input string) (string, error) {
+	rtn := []string{""}
+	out, err := AOC2022102Helper(input)
+	if err != nil {
+		return "", err
+	}
+	rtn = append(rtn, out...)
+
+	return strings.Join(rtn, "\n"), nil
+}

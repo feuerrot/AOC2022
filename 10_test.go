@@ -49,10 +49,11 @@ addx -5`,
 
 }
 
-func TestAOC2022101Helper(t *testing.T) {
+func TestAOC202210LongExample(t *testing.T) {
 	test := struct {
 		input  string
 		output int
+		fb     []string
 	}{
 		input: `addx 15
 addx -11
@@ -201,6 +202,14 @@ noop
 noop
 noop`,
 		output: 13140,
+		fb: []string{
+			"##..##..##..##..##..##..##..##..##..##..",
+			"###...###...###...###...###...###...###.",
+			"####....####....####....####....####....",
+			"#####.....#####.....#####.....#####.....",
+			"######......######......######......####",
+			"#######.......#######.......#######.....",
+		},
 	}
 
 	got, err := AOC2022101Helper(test.input)
@@ -210,6 +219,16 @@ noop`,
 
 	if got != test.output {
 		t.Errorf("AOC2022101Helper() missmatch:\nwant: %d\ngot:  %d", test.output, got)
+	}
+
+	gotFb, err := AOC2022102Helper(test.input)
+	if err != nil {
+		t.Fatalf("AOC2022102Helper() err: %v", err)
+	}
+	for i := 0; i < len(gotFb); i++ {
+		if gotFb[i] != test.fb[i] {
+			t.Errorf("AOC2022102Helper() missmatch in line %d:\nwant: %s\ngot:  %s", i, test.fb[i], gotFb[i])
+		}
 	}
 
 }
