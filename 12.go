@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"sort"
 	"strings"
 	"sync"
@@ -56,6 +55,7 @@ type AOC202212Map struct {
 	SizeX     int
 	SizeY     int
 	Nodes     [][]*AOC202212Node
+	Distance  map[int][]*AOC202212Node
 }
 
 func (m *AOC202212Map) NodeLeft(x, y int) *AOC202212Node {
@@ -146,7 +146,7 @@ CHOICE:
 			bcm.Unlock()
 			wg.Done()
 		}()
-		if len(previous) > 10 {
+		if len(previous) > 2 {
 			wg.Wait()
 		}
 	}
@@ -160,6 +160,62 @@ CHOICE:
 	bestChoice = append(bestChoice, current)
 
 	return bestChoice, bestLen + 1
+}
+
+func (m *AOC202212Map) ParseDistances() {
+	found := []*AOC202212Node{m.NodeStart}
+	distance := map[int][]*AOC202212Node{
+		0: {m.NodeStart},
+	}
+
+	for i := 1; ; i++ {
+		curDist := []*AOC202212Node{}
+		for _, node := range distance[i-1] {
+			if node == nil {
+				continue
+			}
+			search := []*AOC202212Node{
+				node.NodeUp,
+				node.NodeDown,
+				node.NodeLeft,
+				node.NodeRight,
+			}
+
+		NEIGHBOR:
+			for _, neighbor := range search {
+				for _, prevFound := range found {
+					if neighbor == prevFound {
+						continue NEIGHBOR
+					}
+				}
+				curDist = append(curDist, neighbor)
+				found = append(found, neighbor)
+			}
+		}
+		if len(curDist) == 0 {
+			break
+		}
+		distance[i] = curDist
+	}
+	m.Distance = distance
+}
+
+func (m *AOC202212Map) SolvePart1() int {
+	distance := []int{}
+	for i := range m.Distance {
+		distance = append(distance, i)
+	}
+
+	sort.Ints(distance)
+	for _, i := range distance {
+		for _, node := range m.Distance[i] {
+			if node == m.NodeEnd {
+				return i
+			}
+		}
+	}
+
+	return 0
 }
 
 func AOC202212ParseMap(input string) (AOC202212Map, error) {
@@ -213,17 +269,12 @@ func AOC202212ParseMap(input string) (AOC202212Map, error) {
 	return rtn, nil
 }
 
-func AOC2022121Helper(input string) (string, error) {
+func AOC2022121(input string) (string, error) {
 	parsedMap, err := AOC202212ParseMap(input)
 	if err != nil {
 		return "", err
 	}
-	way, len := parsedMap.FindWay(parsedMap.NodeStart, []*AOC202212Node{})
-	log.Printf("Way: %s Len: %d", way, len)
-	return "", nil
-}
-
-func AOC2022121(input string) (string, error) {
-
-	return AOC2022121Helper(input)
+	parsedMap.ParseDistances()
+	len := parsedMap.SolvePart1()
+	return fmt.Sprintf("%d", len), nil
 }

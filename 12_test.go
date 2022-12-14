@@ -40,8 +40,14 @@ abdefghi`,
 	//	t.Errorf("Node[0][0] unexpected missing downer neighbor: %+v", parsedMap.Nodes[0][0])
 	//}
 
-	way, len := parsedMap.FindWay(parsedMap.NodeStart, []*AOC202212Node{})
+	//way, len := parsedMap.FindWay(parsedMap.NodeStart, []*AOC202212Node{})
+	//if len != 31 {
+	//	t.Errorf("parsedMap.FindWay() unexpected len %d: Way: %s", len, way)
+	//}
+
+	parsedMap.ParseDistances()
+	len := parsedMap.SolvePart1()
 	if len != 31 {
-		t.Errorf("parsedMap.FindWay() unexpected len %d: Way: %s", len, way)
+		t.Errorf("parsedMap.SolvePart1() differs:\nwant: %d\ngot:  %d", 31, len)
 	}
 }
