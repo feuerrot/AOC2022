@@ -278,3 +278,37 @@ func AOC2022121(input string) (string, error) {
 	len := parsedMap.SolvePart1()
 	return fmt.Sprintf("%d", len), nil
 }
+
+func AOC2022122(input string) (string, error) {
+	parsedMap, err := AOC202212ParseMap(input)
+	if err != nil {
+		return "", err
+	}
+
+	aNodes := []*AOC202212Node{}
+	for y := range parsedMap.Nodes {
+		for x := range parsedMap.Nodes[y] {
+			if parsedMap.Nodes[y][x].Height == 'a' {
+				aNodes = append(aNodes, parsedMap.Nodes[y][x])
+			}
+		}
+	}
+
+	// Distance from S
+	parsedMap.ParseDistances()
+	startLen := parsedMap.SolvePart1()
+
+	for _, node := range aNodes {
+		parsedMap.NodeStart = node
+		parsedMap.ParseDistances()
+		nodeLen := parsedMap.SolvePart1()
+		if nodeLen == 0 {
+			continue
+		}
+		if nodeLen < startLen {
+			startLen = nodeLen
+		}
+	}
+
+	return fmt.Sprintf("%d", startLen), nil
+}

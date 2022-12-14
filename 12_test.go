@@ -2,7 +2,7 @@ package main
 
 import "testing"
 
-func TestAOC202212ParseMap(t *testing.T) {
+func TestAOC202212Part1(t *testing.T) {
 	test := struct {
 		input    string
 		posStart []int
