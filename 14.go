@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 )
@@ -17,15 +16,20 @@ const (
 
 type AOC202214SandMap struct {
 	// Point[y][x]
-	Point map[int]map[int]MapPoint
-	MaxY  int
-	MinX  int
-	MaxX  int
+	Point    map[int]map[int]MapPoint
+	MaxY     int
+	MinX     int
+	MaxX     int
+	Infinite bool
 }
 
 func (sm *AOC202214SandMap) DrawMap() string {
 	rtn := []string{}
-	for y := 0; y <= sm.MaxY; y++ {
+	yMax := sm.MaxY
+	if !sm.Infinite {
+		yMax += 2
+	}
+	for y := 0; y <= yMax; y++ {
 		line := ""
 		for x := sm.MinX; x <= sm.MaxX; x++ {
 			if x == 500 && y == 0 {
@@ -53,9 +57,18 @@ func (sm *AOC202214SandMap) SetPoint(x, y int, pt MapPoint) {
 	}
 
 	sm.Point[y][x] = pt
+	if x > sm.MaxX {
+		sm.MaxX = x
+	} else if x < sm.MinX {
+		sm.MinX = x
+	}
 }
 
 func (sm *AOC202214SandMap) GetPoint(x, y int) MapPoint {
+	if !sm.Infinite && y == sm.MaxY+2 {
+		return Rock
+	}
+
 	if sm.Point[y] == nil {
 		sm.Point[y] = make(map[int]MapPoint)
 		return Air
@@ -71,9 +84,11 @@ func (sm *AOC202214SandMap) GetPoint(x, y int) MapPoint {
 func (sm *AOC202214SandMap) AddSand() bool {
 	xPos, yPos := 500, 0
 	for {
-		// check if it fell off
-		if yPos > sm.MaxY {
-			return false
+		if sm.Infinite {
+			// check if it fell off
+			if yPos > sm.MaxY {
+				return false
+			}
 		}
 
 		// check below
@@ -96,6 +111,9 @@ func (sm *AOC202214SandMap) AddSand() bool {
 		}
 
 		sm.SetPoint(xPos, yPos, Sand)
+		if xPos == 500 && yPos == 0 {
+			return false
+		}
 		return true
 	}
 }
@@ -153,15 +171,14 @@ func (sm *AOC202214SandMap) ParseRocks(input string) error {
 
 func AOC2022141Helper(input string) (int, error) {
 	sandMap := *&AOC202214SandMap{
-		Point: make(map[int]map[int]MapPoint),
+		Point:    make(map[int]map[int]MapPoint),
+		Infinite: true,
 	}
 
 	err := sandMap.ParseRocks(input)
 	if err != nil {
 		return 0, fmt.Errorf("can't parse rocks: %v", err)
 	}
-
-	log.Printf("Map before:\n%s", sandMap.DrawMap())
 
 	grains := 0
 	for {
@@ -171,13 +188,40 @@ func AOC2022141Helper(input string) (int, error) {
 		grains += 1
 	}
 
-	log.Printf("Map after:\n%s", sandMap.DrawMap())
+	return grains, nil
+}
+
+func AOC2022142Helper(input string) (int, error) {
+	sandMap := *&AOC202214SandMap{
+		Point: make(map[int]map[int]MapPoint),
+	}
+
+	err := sandMap.ParseRocks(input)
+	if err != nil {
+		return 0, fmt.Errorf("can't parse rocks: %v", err)
+	}
+
+	grains := 0
+	for {
+		grains += 1
+		if !sandMap.AddSand() {
+			break
+		}
+	}
 
 	return grains, nil
 }
 
 func AOC2022141(input string) (string, error) {
 	grains, err := AOC2022141Helper(input)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%d", grains), nil
+}
+
+func AOC2022142(input string) (string, error) {
+	grains, err := AOC2022142Helper(input)
 	if err != nil {
 		return "", err
 	}
