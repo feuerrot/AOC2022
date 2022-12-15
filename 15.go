@@ -240,22 +240,29 @@ func (m *AOC202215Map) GetIntMapROI(row, min, max int) AOC202215MapPointsUsed {
 }
 
 func (m *AOC202215Map) PopulateBorder(min, max int) {
+	wg := sync.WaitGroup{}
 	for _, sb := range m.SensorBeacons {
-		borderDistance := sb.Distance + 1
-		for y := sb.Sensor[1] - borderDistance; y <= sb.Sensor[1]+borderDistance; y++ {
-			if y < min || y > max {
-				continue
-			}
-
-			xDelta := borderDistance - absInt(sb.Sensor[1]-y)
-			for _, x := range []int{sb.Sensor[0] - xDelta, sb.Sensor[0] + xDelta} {
-				if x < min || x > max {
+		sb := sb
+		wg.Add(1)
+		go func() {
+			borderDistance := sb.Distance + 1
+			for y := sb.Sensor[1] - borderDistance; y <= sb.Sensor[1]+borderDistance; y++ {
+				if y < min || y > max {
 					continue
 				}
-				sb.Border = append(sb.Border, []int{x, y})
+
+				xDelta := borderDistance - absInt(sb.Sensor[1]-y)
+				for _, x := range []int{sb.Sensor[0] - xDelta, sb.Sensor[0] + xDelta} {
+					if x < min || x > max {
+						continue
+					}
+					sb.Border = append(sb.Border, []int{x, y})
+				}
 			}
-		}
+			wg.Done()
+		}()
 	}
+	wg.Wait()
 }
 
 func (m *AOC202215Map) ParseInput(input string) error {
@@ -325,55 +332,73 @@ func AOC2022152Helper(input string, min, max int) (int, error) {
 		return 0, fmt.Errorf("can't parse input: %v", err)
 	}
 
-	mtx := sync.Mutex{}
+	lrChan := make(chan []int)
+	matchChan := make(chan []int)
+	match := [][]int{}
+	filterChan := make(chan []int)
+	matchWG := sync.WaitGroup{}
+	filterWG := sync.WaitGroup{}
 
-	checkCollision := func(left, right *AOC202215SensorBeacon, match *[][]int) {
-		colmap := map[string]int{}
-		for _, ptLeft := range left.Border {
-			key := fmt.Sprintf("%d|%d", ptLeft[0], ptLeft[1])
-			if _, ok := colmap[key]; !ok {
-				colmap[key] = 1
-			} else {
-				colmap[key] += 1
-			}
-		}
-		for _, ptRight := range right.Border {
-			key := fmt.Sprintf("%d|%d", ptRight[0], ptRight[1])
-			if _, ok := colmap[key]; ok {
-				colmap[key] += 1
-			}
-		}
+	filteredMatches := [][]int{}
 
+	filterWG.Add(1)
+	go func() {
 	OUTER:
-		for key, entry := range colmap {
-			if entry == 2 {
-				parts := strings.Split(key, "|")
-				x, _ := strconv.Atoi(parts[0])
-				y, _ := strconv.Atoi(parts[1])
-				mtx.Lock()
-				for _, m := range *match {
-					if m[0] == x && m[1] == y {
-						mtx.Unlock()
-						continue OUTER
-					}
+		for m := range filterChan {
+			for _, beacon := range sbMap.SensorBeacons {
+				if beacon.Contains(m[0], m[1]) {
+					continue OUTER
 				}
-				(*match) = append((*match), []int{x, y})
-				mtx.Unlock()
+			}
+			filteredMatches = append(filteredMatches, m)
+		}
+		filterWG.Done()
+	}()
+
+	matchWG.Add(1)
+	go func() {
+	OUTERMATCH:
+		for mch := range matchChan {
+			for _, in := range match {
+				if mch[0] == in[0] && mch[1] == in[1] {
+					continue OUTERMATCH
+				}
+			}
+			match = append(match, mch)
+			filterChan <- mch
+		}
+		matchWG.Done()
+		close(filterChan)
+	}()
+
+	checkCollision := func(left, right *AOC202215SensorBeacon) {
+		colmap := make(map[int]int)
+		for _, point := range left.Border {
+			key := point[0]*4000000 + point[1]
+			colmap[key] += 1
+		}
+		for _, point := range right.Border {
+			key := point[0]*4000000 + point[1]
+			colmap[key] += 1
+		}
+
+		for k, value := range colmap {
+			if value == 2 {
+				x := k / 4000000
+				y := k % 4000000
+				matchChan <- []int{x, y}
 			}
 		}
 	}
 
 	sbMap.PopulateBorder(min, max)
 
-	lrChan := make(chan []int)
-	match := [][]int{}
-
 	gowg := sync.WaitGroup{}
 	for i := 0; i < runtime.NumCPU(); i++ {
 		gowg.Add(1)
 		go func() {
 			for lr := range lrChan {
-				checkCollision(sbMap.SensorBeacons[lr[0]], sbMap.SensorBeacons[lr[1]], &match)
+				checkCollision(sbMap.SensorBeacons[lr[0]], sbMap.SensorBeacons[lr[1]])
 			}
 			gowg.Done()
 		}()
@@ -390,17 +415,9 @@ func AOC2022152Helper(input string, min, max int) (int, error) {
 	close(lrChan)
 
 	gowg.Wait()
-
-	filteredMatches := [][]int{}
-OUTER:
-	for _, m := range match {
-		for _, beacon := range sbMap.SensorBeacons {
-			if beacon.Contains(m[0], m[1]) {
-				continue OUTER
-			}
-		}
-		filteredMatches = append(filteredMatches, m)
-	}
+	close(matchChan)
+	matchWG.Wait()
+	filterWG.Wait()
 
 	if len(filteredMatches) == 1 {
 		return filteredMatches[0][0]*4000000 + filteredMatches[0][1], nil
