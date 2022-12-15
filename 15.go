@@ -25,6 +25,17 @@ type AOC202215SensorBeacon struct {
 	Sensor   []int
 	Beacon   []int
 	Distance int
+	Border   [][]int
+}
+
+func (sb *AOC202215SensorBeacon) Overlap(sensor *AOC202215SensorBeacon) bool {
+	sensorDistance := absInt(sb.Sensor[0]-sensor.Sensor[0]) + absInt(sb.Sensor[1]-sensor.Sensor[1])
+	maxDistance := sb.Distance + sensor.Distance
+	return sensorDistance <= maxDistance
+}
+
+func (sb *AOC202215SensorBeacon) Contains(x, y int) bool {
+	return (absInt(sb.Sensor[0]-x)+absInt(sb.Sensor[1]-y) <= sb.Distance)
 }
 
 type AOC202215Map struct {
@@ -229,6 +240,25 @@ func (m *AOC202215Map) GetIntMapROI(row, min, max int) AOC202215MapPointsUsed {
 	return rowMap
 }
 
+func (m *AOC202215Map) PopulateBorder(min, max int) {
+	for _, sb := range m.SensorBeacons {
+		borderDistance := sb.Distance + 1
+		for y := sb.Sensor[1] - borderDistance; y <= sb.Sensor[1]+borderDistance; y++ {
+			if y < min || y > max {
+				continue
+			}
+
+			xDelta := borderDistance - absInt(sb.Sensor[1]-y)
+			for _, x := range []int{sb.Sensor[0] - xDelta, sb.Sensor[0] + xDelta} {
+				if x < min || x > max {
+					continue
+				}
+				sb.Border = append(sb.Border, []int{x, y})
+			}
+		}
+	}
+}
+
 func (m *AOC202215Map) ParseInput(input string) error {
 	m.SensorBeacons = []*AOC202215SensorBeacon{}
 	re := regexp.MustCompile(`Sensor at x=(-?\d+), y=(-?\d+): closest beacon is at x=(-?\d+), y=(-?\d+)`)
@@ -250,6 +280,7 @@ func (m *AOC202215Map) ParseInput(input string) error {
 			Sensor:   intParts[:2],
 			Beacon:   intParts[2:],
 			Distance: absInt(intParts[0]-intParts[2]) + absInt(intParts[1]-intParts[3]),
+			Border:   [][]int{},
 		}
 		m.SensorBeacons = append(m.SensorBeacons, sb)
 	}
@@ -295,55 +326,91 @@ func AOC2022152Helper(input string, min, max int) (int, error) {
 		return 0, fmt.Errorf("can't parse input: %v", err)
 	}
 
-	match := [][]int{}
-	wg := sync.WaitGroup{}
 	mtx := sync.Mutex{}
-	intChan := make(chan int)
 
-	rowMapFunc := func(c chan int) {
-		for y := range c {
-			if y%10000 == 0 {
-				log.Printf("testing row %d", y)
-			}
-			localMap := sbMap.GetIntMapROI(y, min, max)
-
-			for i := 1; i < len(localMap)-1; i++ {
-				if localMap[i] {
-					continue
-				}
-				if localMap[i-1] && localMap[i+1] {
-					log.Printf("possible Match: %d/%d", i+1, y)
-					mtx.Lock()
-					match = append(match, []int{i, y})
-					mtx.Unlock()
-				}
+	checkCollision := func(left, right *AOC202215SensorBeacon, match *[][]int) {
+		colmap := map[string]int{}
+		for _, ptLeft := range left.Border {
+			key := fmt.Sprintf("%d|%d", ptLeft[0], ptLeft[1])
+			if _, ok := colmap[key]; !ok {
+				colmap[key] = 1
+			} else {
+				colmap[key] += 1
 			}
 		}
-		wg.Done()
-	}
-
-	for c := 0; c < runtime.NumCPU()*2; c++ {
-		wg.Add(1)
-		go rowMapFunc(intChan)
-	}
-
-	wg.Add(1)
-	go func() {
-		for y := min; y <= max; y++ {
-			intChan <- y
+		for _, ptRight := range right.Border {
+			key := fmt.Sprintf("%d|%d", ptRight[0], ptRight[1])
+			if _, ok := colmap[key]; ok {
+				colmap[key] += 1
+			}
 		}
-		close(intChan)
-		wg.Done()
-	}()
 
-	wg.Wait()
-
-	if len(match) == 1 {
-		return match[0][0]*4000000 + match[0][1], nil
+	OUTER:
+		for key, entry := range colmap {
+			if entry == 2 {
+				parts := strings.Split(key, "|")
+				x, _ := strconv.Atoi(parts[0])
+				y, _ := strconv.Atoi(parts[1])
+				mtx.Lock()
+				for _, m := range *match {
+					if m[0] == x && m[1] == y {
+						mtx.Unlock()
+						continue OUTER
+					}
+				}
+				(*match) = append((*match), []int{x, y})
+				mtx.Unlock()
+			}
+		}
 	}
 
-	if len(match) > 1 {
-		return 0, fmt.Errorf("found more than one match: %+v", match)
+	sbMap.PopulateBorder(min, max)
+
+	lrChan := make(chan []int)
+	match := [][]int{}
+
+	gowg := sync.WaitGroup{}
+	for i := 0; i < runtime.NumCPU(); i++ {
+		gowg.Add(1)
+		go func() {
+			for lr := range lrChan {
+				checkCollision(sbMap.SensorBeacons[lr[0]], sbMap.SensorBeacons[lr[1]], &match)
+			}
+			gowg.Done()
+		}()
+	}
+
+	for left := 0; left < len(sbMap.SensorBeacons)-1; left++ {
+		for right := left + 1; right < len(sbMap.SensorBeacons); right++ {
+			log.Printf("Next Beacon: left: %d/%d right: %d/%d", sbMap.SensorBeacons[left].Sensor[0], sbMap.SensorBeacons[left].Sensor[1], sbMap.SensorBeacons[right].Sensor[0], sbMap.SensorBeacons[right].Sensor[1])
+			if !sbMap.SensorBeacons[left].Overlap(sbMap.SensorBeacons[right]) {
+				log.Printf("Beacons are too far apart")
+				continue
+			}
+			lrChan <- []int{left, right}
+		}
+	}
+	close(lrChan)
+
+	gowg.Wait()
+
+	filteredMatches := [][]int{}
+OUTER:
+	for _, m := range match {
+		for _, beacon := range sbMap.SensorBeacons {
+			if beacon.Contains(m[0], m[1]) {
+				continue OUTER
+			}
+		}
+		filteredMatches = append(filteredMatches, m)
+	}
+
+	if len(filteredMatches) == 1 {
+		return filteredMatches[0][0]*4000000 + filteredMatches[0][1], nil
+	}
+
+	if len(filteredMatches) > 1 {
+		return 0, fmt.Errorf("found more than one match: %+v", filteredMatches)
 	}
 
 	return 0, fmt.Errorf("couldn't find match")
