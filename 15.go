@@ -2,15 +2,19 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 )
 
-type AOC202215MapPoint int
+type AOC202215MapPoint uint8
+type AOC202215MapPointUsed bool
 
 const (
-	MPBeacon AOC202215MapPoint = iota
+	MPEmpty AOC202215MapPoint = iota
+	MPBeacon
 	MPSensor
 	MPNoBeacon
 )
@@ -24,6 +28,16 @@ type AOC202215SensorBeacon struct {
 type AOC202215Map struct {
 	SensorBeacons []*AOC202215SensorBeacon
 	Map           map[int]map[int]AOC202215MapPoint
+	IntMap        [][]AOC202215MapPointUsed
+	RowMap        []AOC202215MapPointUsed
+}
+
+func (m *AOC202215Map) PrintIntMap() string {
+	rows := []string{}
+	for _, row := range m.IntMap {
+		rows = append(rows, fmt.Sprintf("%+v", row))
+	}
+	return strings.Join(rows, "\n")
 }
 
 func (m *AOC202215Map) SetPoint(x, y int, pt AOC202215MapPoint) {
@@ -75,6 +89,117 @@ func (m *AOC202215Map) PopulateMapROI(row int) {
 		m.SetPoint(sb.Beacon[0], sb.Beacon[1], MPBeacon)
 		m.SetPoint(sb.Sensor[0], sb.Sensor[1], MPSensor)
 	}
+}
+
+func (m *AOC202215Map) PopulateMapSparse(min, max int) {
+	for _, sb := range m.SensorBeacons {
+		for y := sb.Sensor[1] - sb.Distance; y <= sb.Sensor[1]+sb.Distance; y++ {
+			if y < min || y > max {
+				continue
+			}
+
+			xDelta := sb.Distance - absInt(sb.Sensor[1]-y)
+			for _, x := range []int{sb.Sensor[0] - xDelta, sb.Sensor[0] + xDelta} {
+				if x < min || x > max {
+					continue
+				}
+				m.SetPoint(x, y, MPNoBeacon)
+			}
+		}
+		m.SetPoint(sb.Beacon[0], sb.Beacon[1], MPBeacon)
+		m.SetPoint(sb.Sensor[0], sb.Sensor[1], MPSensor)
+	}
+}
+
+func (m *AOC202215Map) PopulateIntMap(min, max int) {
+	m.IntMap = make([][]AOC202215MapPointUsed, max)
+	for _, sb := range m.SensorBeacons {
+		for y := sb.Sensor[1] - sb.Distance; y <= sb.Sensor[1]+sb.Distance; y++ {
+			if y < min || y >= max {
+				continue
+			}
+
+			if m.IntMap[y] == nil {
+				m.IntMap[y] = make([]AOC202215MapPointUsed, max)
+			}
+
+			xDelta := sb.Distance - absInt(sb.Sensor[1]-y)
+			for x := sb.Sensor[0] - xDelta; x <= sb.Sensor[0]+xDelta; x++ {
+				if x < min || x >= max {
+					continue
+				}
+				m.IntMap[y][x] = true
+			}
+		}
+		m.IntMap[sb.Beacon[1]][sb.Beacon[0]] = true
+		m.IntMap[sb.Sensor[1]][sb.Sensor[0]] = true
+	}
+}
+
+func (m *AOC202215Map) PopulateIntMapROI(row, min, max int) {
+	m.RowMap = make([]AOC202215MapPointUsed, max+2)
+	for _, sb := range m.SensorBeacons {
+		yMin := sb.Sensor[1] - sb.Distance
+		yMax := sb.Sensor[1] + sb.Distance
+		if yMin > row || yMax < row {
+			continue
+		}
+
+		xDelta := sb.Distance - absInt(sb.Sensor[1]-row)
+		xMin := sb.Sensor[0] - xDelta
+		if xMin < min {
+			xMin = min
+		}
+		xMax := sb.Sensor[0] + xDelta
+		if xMax > max {
+			xMax = max
+		}
+		for x := xMin; x <= xMax; x++ {
+			m.RowMap[x] = true
+		}
+
+		if sb.Beacon[1] == row && sb.Beacon[0] > min && sb.Beacon[0] < max {
+			m.RowMap[sb.Beacon[0]] = true
+		}
+
+		if sb.Sensor[1] == row && sb.Sensor[0] > min && sb.Sensor[0] < max {
+			m.RowMap[sb.Sensor[0]] = true
+		}
+	}
+}
+
+func (m *AOC202215Map) GetIntMapROI(row, min, max int) []AOC202215MapPointUsed {
+	rowMap := make([]AOC202215MapPointUsed, max+2)
+	for _, sb := range m.SensorBeacons {
+		yMin := sb.Sensor[1] - sb.Distance
+		yMax := sb.Sensor[1] + sb.Distance
+		if yMin > row || yMax < row {
+			continue
+		}
+
+		xDelta := sb.Distance - absInt(sb.Sensor[1]-row)
+		xMin := sb.Sensor[0] - xDelta
+		if xMin < min {
+			xMin = min
+		}
+		xMax := sb.Sensor[0] + xDelta
+		if xMax > max {
+			xMax = max
+		}
+		for x := xMin; x <= xMax; x++ {
+			rowMap[x] = true
+		}
+
+		if sb.Beacon[1] == row && sb.Beacon[0] > min && sb.Beacon[0] < max {
+			rowMap[sb.Beacon[0]] = true
+		}
+
+		if sb.Sensor[1] == row && sb.Sensor[0] > min && sb.Sensor[0] < max {
+			rowMap[sb.Sensor[0]] = true
+		}
+	}
+
+	return rowMap
 }
 
 func (m *AOC202215Map) ParseInput(input string) error {
@@ -129,6 +254,59 @@ func AOC2022151Helper(input string, row int) (int, error) {
 
 func AOC2022151(input string) (string, error) {
 	res, err := AOC2022151Helper(input, 2000000)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%d", res), nil
+}
+
+func AOC2022152Helper(input string, min, max int) (int, error) {
+	sbMap := &AOC202215Map{}
+	err := sbMap.ParseInput(input)
+	if err != nil {
+		return 0, fmt.Errorf("can't parse input: %v", err)
+	}
+
+	match := [][]int{}
+	wg := sync.WaitGroup{}
+	mtx := sync.Mutex{}
+	for y := min; y <= max; y++ {
+		wg.Add(1)
+		y := y
+		go func() {
+			rowMap := sbMap.GetIntMapROI(y, min, max)
+
+			for i := 0; i < len(rowMap)-2; i++ {
+				if !rowMap[i] {
+					continue
+				}
+				if !rowMap[i+1] && rowMap[i+2] {
+					log.Printf("possible Match: %d/%d", i+1, y)
+					mtx.Lock()
+					match = append(match, []int{i + 1, y})
+					mtx.Unlock()
+				}
+			}
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
+
+	if len(match) == 1 {
+		return match[0][0]*4000000 + match[0][1], nil
+	}
+
+	if len(match) > 1 {
+		return 0, fmt.Errorf("found more than one match: %+v", match)
+	}
+
+	return 0, fmt.Errorf("couldn't find match")
+}
+
+func AOC2022152(input string) (string, error) {
+	res, err := AOC2022152Helper(input, 0, 4000000)
 	if err != nil {
 		return "", err
 	}
