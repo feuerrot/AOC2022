@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -382,9 +381,7 @@ func AOC2022152Helper(input string, min, max int) (int, error) {
 
 	for left := 0; left < len(sbMap.SensorBeacons)-1; left++ {
 		for right := left + 1; right < len(sbMap.SensorBeacons); right++ {
-			log.Printf("Next Beacon: left: %d/%d right: %d/%d", sbMap.SensorBeacons[left].Sensor[0], sbMap.SensorBeacons[left].Sensor[1], sbMap.SensorBeacons[right].Sensor[0], sbMap.SensorBeacons[right].Sensor[1])
 			if !sbMap.SensorBeacons[left].Overlap(sbMap.SensorBeacons[right]) {
-				log.Printf("Beacons are too far apart")
 				continue
 			}
 			lrChan <- []int{left, right}
