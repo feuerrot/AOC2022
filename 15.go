@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -11,6 +12,7 @@ import (
 
 type AOC202215MapPoint uint8
 type AOC202215MapPointUsed bool
+type AOC202215MapPointsUsed []AOC202215MapPointUsed
 
 const (
 	MPEmpty AOC202215MapPoint = iota
@@ -29,7 +31,7 @@ type AOC202215Map struct {
 	SensorBeacons []*AOC202215SensorBeacon
 	Map           map[int]map[int]AOC202215MapPoint
 	IntMap        [][]AOC202215MapPointUsed
-	RowMap        []AOC202215MapPointUsed
+	RowMap        AOC202215MapPointsUsed
 }
 
 func (m *AOC202215Map) PrintIntMap() string {
@@ -91,6 +93,30 @@ func (m *AOC202215Map) PopulateMapROI(row int) {
 	}
 }
 
+func (m *AOC202215Map) GetMapROI(row int) map[int]AOC202215MapPointUsed {
+	rowMap := make(map[int]AOC202215MapPointUsed)
+	for _, sb := range m.SensorBeacons {
+		yMin := sb.Sensor[1] - sb.Distance
+		yMax := sb.Sensor[1] + sb.Distance
+		if yMin > row || yMax < row {
+			continue
+		}
+
+		xDelta := sb.Distance - absInt(sb.Sensor[1]-row)
+		for x := sb.Sensor[0] - xDelta; x <= sb.Sensor[0]+xDelta; x++ {
+			rowMap[x] = true
+		}
+		if sb.Beacon[1] == row {
+			rowMap[sb.Beacon[0]] = true
+		}
+		if sb.Sensor[1] == row {
+			rowMap[sb.Sensor[0]] = true
+		}
+	}
+
+	return rowMap
+}
+
 func (m *AOC202215Map) PopulateMapSparse(min, max int) {
 	for _, sb := range m.SensorBeacons {
 		for y := sb.Sensor[1] - sb.Distance; y <= sb.Sensor[1]+sb.Distance; y++ {
@@ -137,7 +163,7 @@ func (m *AOC202215Map) PopulateIntMap(min, max int) {
 }
 
 func (m *AOC202215Map) PopulateIntMapROI(row, min, max int) {
-	m.RowMap = make([]AOC202215MapPointUsed, max+2)
+	rowMap := make([]AOC202215MapPointUsed, max+2)
 	for _, sb := range m.SensorBeacons {
 		yMin := sb.Sensor[1] - sb.Distance
 		yMax := sb.Sensor[1] + sb.Distance
@@ -155,21 +181,22 @@ func (m *AOC202215Map) PopulateIntMapROI(row, min, max int) {
 			xMax = max
 		}
 		for x := xMin; x <= xMax; x++ {
-			m.RowMap[x] = true
+			rowMap[x] = true
 		}
 
 		if sb.Beacon[1] == row && sb.Beacon[0] > min && sb.Beacon[0] < max {
-			m.RowMap[sb.Beacon[0]] = true
+			rowMap[sb.Beacon[0]] = true
 		}
 
 		if sb.Sensor[1] == row && sb.Sensor[0] > min && sb.Sensor[0] < max {
-			m.RowMap[sb.Sensor[0]] = true
+			rowMap[sb.Sensor[0]] = true
 		}
 	}
+	m.RowMap = rowMap
 }
 
-func (m *AOC202215Map) GetIntMapROI(row, min, max int) []AOC202215MapPointUsed {
-	rowMap := make([]AOC202215MapPointUsed, max+2)
+func (m *AOC202215Map) GetIntMapROI(row, min, max int) AOC202215MapPointsUsed {
+	rowMap := make(AOC202215MapPointsUsed, max+1)
 	for _, sb := range m.SensorBeacons {
 		yMin := sb.Sensor[1] - sb.Distance
 		yMax := sb.Sensor[1] + sb.Distance
@@ -271,26 +298,43 @@ func AOC2022152Helper(input string, min, max int) (int, error) {
 	match := [][]int{}
 	wg := sync.WaitGroup{}
 	mtx := sync.Mutex{}
-	for y := min; y <= max; y++ {
-		wg.Add(1)
-		y := y
-		go func() {
-			rowMap := sbMap.GetIntMapROI(y, min, max)
+	intChan := make(chan int)
 
-			for i := 0; i < len(rowMap)-2; i++ {
-				if !rowMap[i] {
+	rowMapFunc := func(c chan int) {
+		for y := range c {
+			if y%10000 == 0 {
+				log.Printf("testing row %d", y)
+			}
+			localMap := sbMap.GetIntMapROI(y, min, max)
+
+			for i := 1; i < len(localMap)-1; i++ {
+				if localMap[i] {
 					continue
 				}
-				if !rowMap[i+1] && rowMap[i+2] {
+				if localMap[i-1] && localMap[i+1] {
 					log.Printf("possible Match: %d/%d", i+1, y)
 					mtx.Lock()
-					match = append(match, []int{i + 1, y})
+					match = append(match, []int{i, y})
 					mtx.Unlock()
 				}
 			}
-			wg.Done()
-		}()
+		}
+		wg.Done()
 	}
+
+	for c := 0; c < runtime.NumCPU()*2; c++ {
+		wg.Add(1)
+		go rowMapFunc(intChan)
+	}
+
+	wg.Add(1)
+	go func() {
+		for y := min; y <= max; y++ {
+			intChan <- y
+		}
+		close(intChan)
+		wg.Done()
+	}()
 
 	wg.Wait()
 
